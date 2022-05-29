@@ -150,10 +150,10 @@ Lista de ecuaciones de rectas:
 Lista de puntos de intersección:
 <div class="w3-border" id="intersecciones">___</div>
 <p>
-<button class="w3-btn w3-border w3-black" id="negro" onclick='cambiarColor("#000000")'>Negro</button>
-<button class="w3-btn w3-border w3-red" id="rojo" onclick='cambiarColor("#ff0000")'>Rojo</button>
-<button class="w3-btn w3-border w3-green" id="verde" onclick='cambiarColor("#00ff00")'>Verde</button>
-<button class="w3-btn w3-border w3-blue" id="azul" onclick='cambiarColor("#0000ff")'>Azul</button>
+<button class="w3-btn w3-border w3-black" id="black" onclick='cambiarColor("black")'>Negro</button>
+<button class="w3-btn w3-border w3-red" id="red" onclick='cambiarColor("red")'>Rojo</button>
+<button class="w3-btn w3-border w3-green" id="green" onclick='cambiarColor("green")'>Verde</button>
+<button class="w3-btn w3-border w3-blue" id="blue" onclick='cambiarColor("blue")'>Azul</button>
 </p><p>
 Según se seleccione un color la palabra que contiene el botón se podrán en negrita. <br>
 Al seleccionar un color la siguiente recta que pintemos se harán con ese color.
@@ -218,6 +218,7 @@ function pintaEcuacion(ecuacion) {
     'inicio': new Equation(ecuacion, 0).solveFor("x"),
     'fin': new Equation(ecuacion, 500).solveFor("x"),
   };
+  pincel.beginPath();
   pincel.moveTo(valoresParaPintar.inicio, 0);
   pincel.lineTo(valoresParaPintar.fin, 500);
   pincel.stroke();
@@ -245,10 +246,10 @@ function dibujaPunto(x, y) {
   console.table([x, y]);
   pincel.beginPath();
   pincel.arc(x, y, 2, 0, 2 * Math.PI, false);
-  pincel.fillStyle = 'green';
+  pincel.fillStyle = 'red';
   pincel.fill();
-  pincel.lineWidth = 5;
-  pincel.strokeStyle = '#003300';
+  pincel.lineWidth = 1;
+  pincel.strokeStyle = 'red';
   pincel.stroke();
 
 }
@@ -312,5 +313,17 @@ function calculaEcuacion(puntoP, puntoQ) {
   return ecuacion;
 }
 
+function cambiarColor(color) {
+  resetButtons();
+  document.getElementById(color).style.fontWeight = "900"; 
+  pincel.strokeStyle = color;
+}
+
+function resetButtons() {
+  document.getElementById("black").style.fontWeight = "300"; 
+  document.getElementById("red").style.fontWeight = "300"; 
+  document.getElementById("blue").style.fontWeight = "300"; 
+  document.getElementById("green").style.fontWeight = "300"; 
+}
 </script>
 </p></body></html>
