@@ -140,8 +140,8 @@ se mostrarán en el canvas con una circunferencia de radio 2.
 Lista de parejas de puntos:
 </p><div id="parejas" class="w3-border">___</div>
 <p>
-<button class="w3-button w3-white w3-border" onclick="calcularEcuaciones();">Calcula ecuaciones</button>
-<button class="w3-button w3-white w3-border" onclick="dibujaGrafica();">Calcula intersección</button>
+<button class="w3-button w3-white w3-border" onclick="actualizaEcuaciones();">Calcula ecuaciones</button>
+<button class="w3-button w3-white w3-border" onclick="calcularInterseccion();">Calcula intersección</button>
 <button class="w3-button w3-white w3-border" onclick="borrar();">Borrar</button>
 <br>
 Lista de ecuaciones de rectas:
@@ -169,10 +169,15 @@ let Equation = algebra.Equation;
 
 let listaPuntos=[];
 let listaEcuaciones=[];
+let listaIntersecciones=[];
 let divEcuaciones=document.getElementById('ecuaciones');
 let divParejas=document.getElementById('parejas');
+let divIntersecciones=document.getElementById('intersecciones');
 let canvas=document.getElementById('myCanvas');
 let pincel=canvas.getContext("2d");
+
+let puntoOrigen={};
+let puntoDestino={};
 
 function borrar(){
   listaPuntos=[];
@@ -180,38 +185,131 @@ function borrar(){
 }
 
 function pintaGuardaPunto(event){
-  console.log("click en el punto: ("+event.offsetX+","+event.offsetY+")");
-  listaPuntos.push([event.offsetX,event.offsetY]);
-
-  // mostrar en divParejas los puntos;
-  let punto="("+event.offsetX+","+event.offsetY+"); ";
-  divParejas.innerHTML=divParejas.innerHTML+punto;
+  let punto = {
+    x: event.offsetX,
+    y: event.offsetY
+  };
+  listaPuntos.push(punto);
+  actualizaParejas();
+  if (puntoOrigen && Object.keys(puntoOrigen).length === 0 && Object.getPrototypeOf(puntoOrigen) === Object.prototype) {
+    puntoOrigen = punto;
+  } else {
+    puntoDestino = punto;
+    dibujaRecta();
+    puntoOrigen = {};
+  }
 }
+
 function calcularEcuaciones(){
-  // hay que hacer un buble que recorra todas las parejas de puntos guardados en listaPuntos
-  let a1,a2,b1,b2;
-  a1=listaPuntos[0][0];a2=listaPuntos[0][1];
-  b1=listaPuntos[1][0];b2=listaPuntos[1][1];
+  for(let i = 0; i < listaPuntos.length; i = i+2){ 
+    let puntoP = listaPuntos[i];
+    if (i+1 < listaPuntos.length) {
+      let puntoQ = listaPuntos[i+1];
 
-  let cad="("+b2+"-"+a2+")/("+b1+"-"+a1+")*x+"+a2+"-"+"("+b2+"-"+a2+")/("+b1+"-"+a1+")*"+a1;
-  console.log("cad:"+cad);
-  let eq1=algebra.parse(cad);
-  console.log("Ecuación calculada:"+eq1);
-  listaEcuaciones.push(eq1);
-  divEcuaciones.innerHTML=eq1.toString();
-
-  pintaEcuacion(eq1);
-  //divEcuaciones.innerHTML= divEcuaciones.innerHTML +"; "+ eq1.toString();
+      
+      divEcuaciones.innerHTML = divEcuaciones.innerHTML +"; "+ ecuacion.toString();
+      pintaEcuacion(ecuacion);
+    }
+  }
 }
 
-function pintaEcuacion(eq1) {
-  let y0,y500;
-  y0=eq1.eval({x:0}).constants[0].valueOf();
-  y500=eq1.eval({x:500}).constants[0].valueOf();
-  console.log(y0+" "+y500);
-  pincel.moveTo(0,y0);
-  pincel.lineTo(500,y500);
+function pintaEcuacion(ecuacion) {
+  let valoresParaPintar = {
+    'inicio': new Equation(ecuacion, 0).solveFor("x"),
+    'fin': new Equation(ecuacion, 500).solveFor("x"),
+  };
+  pincel.moveTo(valoresParaPintar.inicio, 0);
+  pincel.lineTo(valoresParaPintar.fin, 500);
   pincel.stroke();
+}
+
+function calcularInterseccion(){
+  listaIntersecciones = [];
+  for(let i = 0; i < listaEcuaciones.length; i = i+2){ 
+    let ecuacion1 = listaEcuaciones[i];
+    let ecuacion2 = listaEcuaciones[i+1];
+    let sistema = new Equation(ecuacion1, ecuacion2);
+    var valorX = sistema.solveFor("x");
+    let interseccion = {
+      x: valorX,
+      y: ecuacion1.eval({x: valorX}).constants[0]
+    };
+    listaIntersecciones.push(interseccion);
+    dibujaPunto(interseccion.x,interseccion.y);
+  }
+
+  actualizaIntersecciones();
+}
+
+function dibujaPunto(x, y) {
+  console.table([x, y]);
+  pincel.beginPath();
+  pincel.arc(x, y, 2, 0, 2 * Math.PI, false);
+  pincel.fillStyle = 'green';
+  pincel.fill();
+  pincel.lineWidth = 5;
+  pincel.strokeStyle = '#003300';
+  pincel.stroke();
+
+}
+
+function calcularVectorDirector(puntoP, puntoQ) {
+  return { 
+    v1: puntoQ[0] - puntoP[0], 
+    v2: puntoQ[1] - puntoP[1]
+  };
+}
+
+function calcularEcuacionExplicita(puntoP, pendiente) {
+  return pendiente+"*x+(-("+pendiente+")*("+puntoP.x+")+("+puntoP.y+"))";
+}
+
+function calcularPendiente(puntoP, puntoQ) {
+  let vectorDirector = { 
+    v1: puntoQ.x - puntoP.x, 
+    v2: puntoQ.y - puntoP.y
+  }
+
+  return vectorDirector.v2/vectorDirector.v1;
+}
+
+function actualizaParejas() {
+  let textoParejas = '';
+  for(i in listaPuntos) {
+    textoParejas += "("+listaPuntos[i].x+", "+listaPuntos[i].y+");";
+  }
+  divParejas.innerHTML = textoParejas;
+}
+
+function actualizaEcuaciones() {
+  let textoEcuaciones = '';
+  for(i in listaEcuaciones) {
+    textoEcuaciones += listaEcuaciones[i]+"; ";
+  }
+  divEcuaciones.innerHTML = textoEcuaciones;
+}
+
+function actualizaIntersecciones() {
+  let textoIntersecciones = '';
+  for(i in listaIntersecciones) {
+    textoIntersecciones += "("+listaIntersecciones[i].x+", "+listaIntersecciones[i].y+");";
+  }
+  divIntersecciones.innerHTML = textoIntersecciones;
+}
+
+function dibujaRecta() {
+  let ecuacion = calculaEcuacion(puntoOrigen, puntoDestino);
+  pintaEcuacion(ecuacion);
+}
+
+function calculaEcuacion(puntoP, puntoQ) {
+  let pendiente = calcularPendiente(puntoP, puntoQ);
+  let ecuacionExplicita = calcularEcuacionExplicita(puntoP, pendiente);
+  console.log("ecuacion explicita: ", ecuacionExplicita);
+  let ecuacion = algebra.parse(ecuacionExplicita);
+  listaEcuaciones.push(ecuacion);
+  
+  return ecuacion;
 }
 
 </script>
